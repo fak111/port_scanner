@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>局域网端口扫描器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .control-panel h2 {
+            color: #212529;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .tasks-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-bar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-item .label {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .stat-item .value {
+            color: #212529;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+
+        .task-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .task-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .task-id {
+            font-size: 12px;
+            color: #6c757d;
+            font-family: monospace;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-scanning {
+            background: #ffc107;
+            color: #000;
+            animation: pulse 2s infinite;
+        }
+
+        .status-completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 25px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .task-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .info-item .label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 3px;
+        }
+
+        .info-item .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .results-table thead {
+            background: #f8f9fa;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .results-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .ip-badge {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .quality-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .quality-excellent {
+            background: #28a745;
+            color: white;
+        }
+
+        .quality-good {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .quality-fair {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .quality-poor {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .quality-bad {
+            background: #dc3545;
+            color: white;
+        }
+
+        .quality-unavailable {
+            background: #6c757d;
+            color: white;
+        }
+
+        .proxy-details {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .proxy-details span {
+            margin-right: 10px;
+        }
+
+        .country-flag {
+            font-size: 16px;
+            margin-right: 5px;
+        }
+
+        .location-info {
+            display: inline-flex;
+            align-items: center;
+            background: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        .ai-models {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .ai-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .ai-available {
+            background: #28a745;
+            color: white;
+        }
+
+        .ai-blocked {
+            background: #dc3545;
+            color: white;
+        }
+
+        .ai-uncertain {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .ai-error {
+            background: #6c757d;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 局域网端口扫描器</h1>
+            <p>支持多用户并发扫描 · 实时监控网络端口状态</p>
+        </div>
+
+        <div class="content-grid">
+            <!-- 左侧控制面板 -->
+            <div class="control-panel">
+                <h2>创建扫描任务</h2>
+
+                <div id="alertContainer"></div>
+
+                <div class="form-group">
+                    <label for="network">网络地址 (CIDR)</label>
+                    <input type="text" id="network" value="10.16.65.0/24" placeholder="例如: 192.168.1.0/24">
+                </div>
+
+                <div class="form-group">
+                    <label for="port">目标端口</label>
+                    <input type="number" id="port" value="7890" placeholder="1-65535">
+                </div>
+
+                <div class="form-group">
+                    <label for="threads">并发线程</label>
+                    <input type="number" id="threads" value="50" placeholder="推荐: 50-100">
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="checkProxy" style="width: auto;">
+                        <span>检测翻墙代理质量 (速度较慢)</span>
+                    </label>
+                    <small style="color: #6c757d; margin-top: 5px; display: block;">
+                        测试访问 Google、YouTube 等外网站点<br>
+                        并检测 ChatGPT、Claude、Gemini、Copilot 可用性
+                    </small>
+                </div>
+
+                <button class="btn btn-primary" onclick="createScan()">🚀 创建扫描任务</button>
+            </div>
+
+            <!-- 右侧任务列表 -->
+            <div class="tasks-section">
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="label">总任务数</div>
+                        <div class="value" id="totalTasks">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">进行中</div>
+                        <div class="value" id="activeTasks">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">已完成</div>
+                        <div class="value" id="completedTasks">0</div>
+                    </div>
+                </div>
+
+                <div id="tasksContainer">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                        <h3>暂无扫描任务</h3>
+                        <p>创建新的扫描任务开始使用</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://10.16.65.233:5000/api';
+        let updateInterval;
+
+        // 显示提示消息
+        function showAlert(message, type = 'error') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'error' ? 'alert-error' : 'alert-success';
+            alertContainer.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        // 创建扫描任务
+        async function createScan() {
+            const network = document.getElementById('network').value;
+            const port = document.getElementById('port').value;
+            const threads = document.getElementById('threads').value;
+            const checkProxy = document.getElementById('checkProxy').checked;
+
+            if (!network || !port) {
+                showAlert('请填写网络地址和端口号');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        network: network,
+                        port: parseInt(port),
+                        threads: parseInt(threads),
+                        check_proxy_quality: checkProxy
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showAlert(`任务已创建！任务ID: ${data.task_id}`, 'success');
+                    loadAllTasks();
+                } else {
+                    showAlert(data.message);
+                }
+            } catch (error) {
+                showAlert('无法连接到后端服务');
+            }
+        }
+
+        // 加载所有任务
+        async function loadAllTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    updateStats(result.data);
+                    renderTasks(result.data);
+                }
+            } catch (error) {
+                console.error('加载任务失败:', error);
+            }
+        }
+
+        // 更新统计信息
+        function updateStats(tasks) {
+            const total = tasks.length;
+            const active = tasks.filter(t => t.is_scanning).length;
+            const completed = tasks.filter(t => !t.is_scanning && t.end_time).length;
+
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('activeTasks').textContent = active;
+            document.getElementById('completedTasks').textContent = completed;
+        }
+
+        // 渲染任务列表
+        function renderTasks(tasks) {
+            const container = document.getElementById('tasksContainer');
+
+            if (tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                        <h3>暂无扫描任务</h3>
+                        <p>创建新的扫描任务开始使用</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 按创建时间倒序排列
+            tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            let html = '';
+            tasks.forEach(task => {
+                const statusClass = task.is_scanning ? 'status-scanning' :
+                                   (task.error ? 'status-error' : 'status-completed');
+                const statusText = task.is_scanning ? '扫描中' :
+                                  (task.error ? '错误' : '已完成');
+
+                html += `
+                    <div class="task-card">
+                        <div class="task-header">
+                            <div>
+                                <div class="task-title">${task.network}:${task.port}</div>
+                                <div class="task-id">ID: ${task.task_id}</div>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                                ${!task.is_scanning ? `<button class="btn-delete" onclick="deleteTask('${task.task_id}')">删除</button>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${task.progress}%">
+                                ${task.progress}%
+                            </div>
+                        </div>
+
+                        <div class="task-info">
+                            <div class="info-item">
+                                <div class="label">扫描进度</div>
+                                <div class="value">${task.scanned} / ${task.total}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="label">发现开放</div>
+                                <div class="value">${task.results.length} 个</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="label">开始时间</div>
+                                <div class="value">${task.start_time || '--'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="label">结束时间</div>
+                                <div class="value">${task.end_time || '--'}</div>
+                            </div>
+                        </div>
+
+                        ${task.results.length > 0 ? renderResults(task.results) : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 渲染结果表格
+        function renderResults(results) {
+            const hasProxyInfo = results.length > 0 && results[0].hasOwnProperty('proxy_quality');
+
+            let html = `
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>代理地址</th>
+                            ${hasProxyInfo ? '<th>出口位置</th>' : ''}
+                            ${hasProxyInfo ? '<th>AI模型</th>' : ''}
+                            ${hasProxyInfo ? '<th>类型</th>' : ''}
+                            ${hasProxyInfo ? '<th>质量</th>' : ''}
+                            ${hasProxyInfo ? '<th>速度</th>' : ''}
+                            ${hasProxyInfo ? '<th>评分</th>' : ''}
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            results.forEach((result, index) => {
+                const qualityClass = result.quality_level ? `quality-${result.quality_level}` : '';
+                const qualityText = {
+                    'excellent': '优秀',
+                    'good': '良好',
+                    'fair': '一般',
+                    'poor': '较差',
+                    'bad': '很差',
+                    'unavailable': '不可用'
+                };
+
+                // 国家代码转国旗emoji
+                const getCountryFlag = (countryCode) => {
+                    if (!countryCode) return '';
+                    const codePoints = countryCode
+                        .toUpperCase()
+                        .split('')
+                        .map(char => 127397 + char.charCodeAt());
+                    return String.fromCodePoint(...codePoints);
+                };
+
+                // 生成位置信息
+                let locationInfo = '';
+                if (hasProxyInfo && result.exit_country) {
+                    const flag = getCountryFlag(result.exit_country_code);
+                    const city = result.exit_city ? `${result.exit_city}, ` : '';
+                    locationInfo = `
+                        <div class="location-info">
+                            <span class="country-flag">${flag}</span>
+                            <span>${city}${result.exit_country}</span>
+                        </div>
+                        ${result.exit_ip ? `<div style="font-size: 11px; color: #6c757d; margin-top: 3px;">IP: ${result.exit_ip}</div>` : ''}
+                    `;
+                }
+
+                // 生成AI模型可用性信息
+                let aiModelsHtml = '';
+                if (hasProxyInfo && result.ai_models) {
+                    const aiConfig = {
+                        'chatgpt': { name: 'ChatGPT', icon: '🤖' },
+                        'claude': { name: 'Claude', icon: '🧠' },
+                        'gemini': { name: 'Gemini', icon: '✨' },
+                        'copilot': { name: 'Copilot', icon: '🚀' }
+                    };
+
+                    aiModelsHtml = '<div class="ai-models">';
+                    for (const [key, info] of Object.entries(result.ai_models)) {
+                        const config = aiConfig[key];
+                        let badgeClass = 'ai-error';
+                        let statusText = '?';
+
+                        if (info.available) {
+                            badgeClass = 'ai-available';
+                            statusText = '✓';
+                        } else if (info.status === 'blocked') {
+                            badgeClass = 'ai-blocked';
+                            statusText = '✗';
+                        } else if (info.status === 'uncertain') {
+                            badgeClass = 'ai-uncertain';
+                            statusText = '?';
+                        }
+
+                        aiModelsHtml += `<span class="ai-badge ${badgeClass}" title="${config.name}: ${info.status}">${config.icon} ${statusText}</span>`;
+                    }
+                    aiModelsHtml += '</div>';
+                }
+
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>
+                            <div><span class="ip-badge">${result.ip}:${result.port}</span></div>
+                            ${hasProxyInfo && result.proxy_quality ? `
+                                <div class="proxy-details">
+                                    ${result.can_access_google ? '<span style="color: #28a745;">✓ Google</span>' : ''}
+                                    ${result.proxy_quality.is_working ? '<span style="color: #28a745;">✓ 可用</span>' : '<span style="color: #dc3545;">✗ 不可用</span>'}
+                                </div>
+                            ` : ''}
+                        </td>
+                        ${hasProxyInfo ? `
+                            <td style="min-width: 150px;">
+                                ${locationInfo || '<span style="color: #6c757d;">未知</span>'}
+                            </td>
+                            <td style="min-width: 150px;">
+                                ${aiModelsHtml || '<span style="color: #6c757d;">-</span>'}
+                            </td>
+                            <td><strong>${result.proxy_type ? result.proxy_type.toUpperCase() : '-'}</strong></td>
+                            <td>
+                                ${result.quality_level ? `<span class="quality-badge ${qualityClass}">${qualityText[result.quality_level]}</span>` : '-'}
+                            </td>
+                            <td style="color: ${result.response_time < 500 ? '#28a745' : result.response_time < 1500 ? '#ffc107' : '#dc3545'};">
+                                <strong>${result.response_time ? result.response_time + ' ms' : '-'}</strong>
+                            </td>
+                            <td><strong style="font-size: 16px;">${result.quality_score ? result.quality_score : '-'}</strong></td>
+                        ` : ''}
+                        <td style="font-size: 11px; color: #6c757d;">${result.timestamp.split(' ')[1]}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            return html;
+        }
+
+        // 删除任务
+        async function deleteTask(taskId) {
+            if (!confirm('确定要删除这个任务吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/task/${taskId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showAlert('任务已删除', 'success');
+                    loadAllTasks();
+                } else {
+                    showAlert(data.message);
+                }
+            } catch (error) {
+                showAlert('删除任务失败');
+            }
+        }
+
+        // 页面加载和定时更新
+        window.onload = async function() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                if (data.status === 'success') {
+                    console.log('后端服务连接成功');
+                    loadAllTasks();
+
+                    // 每2秒自动刷新任务列表
+                    setInterval(loadAllTasks, 2000);
+                }
+            } catch (error) {
+                showAlert('警告：无法连接到后端服务，请确保后端已启动');
+            }
+        };
+    </script>
+</body>
+</html>
